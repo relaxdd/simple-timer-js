@@ -9,12 +9,134 @@
   <title>SimpleTimer Example</title>
 
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-  <link rel="stylesheet" href="/src/style.css">
+  <link rel="stylesheet" href="/src/style/style.scss">
 </head>
 <body>
 <main>
   <div class="container">
-    <div id="timer">00:00:00</div>
+    <div id="timer" style="min-height: 33.6px">00:00:00.00</div>
+
+    <div id="timer-controls" class="timer_controls">
+      <input type="button" class="btn-primary" value="Pause" data-pause="">
+      <input type="button" class="btn-primary" value="Play" data-play="">
+      <input type="button" class="btn-primary" value="Stop" data-stop="">
+      <input type="button" class="btn-primary" value="Reset" data-reset="">
+    </div>
+
+    <div class="setting_form">
+      <h2 class="setting_form__title">Timer options</h2>
+
+      <form id="setting-form">
+        <div class="setting_form__checkboxes">
+          <label class="form-checkbox">
+            <input type="checkbox" name="autoPlay">
+            <span>Autorun timer on page loading</span>
+          </label>
+
+          <label class="form-checkbox">
+            <input type="checkbox" name="saveStateInStorage">
+            <span>Save the timer state in the browser memory</span>
+          </label>
+
+          <label class="form-checkbox">
+            <input type="checkbox" name="displayMilliseconds" checked="">
+            <span>Display milliseconds in the timer</span>
+          </label>
+
+          <label class="form-checkbox">
+            <input type="checkbox" name="redirect">
+            <span>Redirect the user after the time has expired</span>
+          </label>
+
+          <label class="form-checkbox">
+            <input type="checkbox" name="setFewColor" checked="">
+            <span>Set the color that informs you about the elapsing time</span>
+          </label>
+        </div>
+
+        <div class="setting_form__fields">
+          <div>
+            <label class="form-label" for="seconds-field">
+              <span>Seconds</span>
+              <small class="form-label--required">*</small>
+            </label>
+
+            <input
+              type="number"
+              name="seconds"
+              id="seconds-field"
+              class="form-control"
+              required=""
+              value="90"
+              min="5"
+            >
+          </div>
+
+          <div>
+            <label class="form-label" for="few-field">
+              <span>Few</span>
+            </label>
+
+            <input
+              type="number"
+              name="few"
+              id="few-field"
+              class="form-control"
+              value="30"
+              min="0"
+            >
+          </div>
+
+          <div>
+            <label class="form-label" for="fraction-digits-field">
+              <span>Qty Fraction Digits</span>
+            </label>
+
+            <input
+              type="number"
+              name="fractionDigits"
+              id="fraction-digits-field"
+              class="form-control"
+              value="2"
+              min="1"
+              max="3"
+            >
+          </div>
+
+          <div>
+            <label class="form-label" for="redirect-url-field">
+              <span>Redirect URL</span>
+            </label>
+
+            <input
+              type="url"
+              name="redirectUrl"
+              id="redirect-url-field"
+              class="form-control"
+            >
+          </div>
+
+          <div>
+            <label class="form-label" for="few-color-field">
+              <span>Few color</span>
+            </label>
+
+            <input
+              type="color"
+              name="fewColor"
+              id="few-color-field"
+              class="form-control"
+              value="#FF0000"
+            >
+          </div>
+        </div>
+
+        <div class="setting_form__buttons">
+          <input type="submit" class="btn-primary" value="Commit changes" disabled="">
+          <input type="reset" class="btn-primary" value="Reset options">
+        </div>
+      </form>
+    </div>
   </div>
 </main>
 

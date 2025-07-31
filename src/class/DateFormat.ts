@@ -19,10 +19,12 @@ class DateFormat {
     return { hours, minutes, seconds: secs };
   }
   
-  static formatTime(seconds: number) {
+  static formatTime(seconds: number, displayMs = false, fractionDigits: 1 | 2 | 3) {
     const date = new Date(0);
-    date.setSeconds(seconds);
-    return date.toISOString().substring(11, 19);
+    const substring = !displayMs ? 19 : 20 + fractionDigits;
+    
+    date.setMilliseconds(seconds * 1000);
+    return date.toISOString().substring(11, substring);
   }
 }
 

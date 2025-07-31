@@ -1,0 +1,42 @@
+#timer {
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.timer_controls {
+  margin: 24px 0;
+}
+
+.timer_controls,
+.setting_form__buttons {
+  display: flex;
+  align-items: center;
+  column-gap: 0.5rem;
+}
+
+.setting_form {
+  width: fit-content;
+
+  &__title {
+    margin: 0 0 24px;
+  }
+
+  &__checkboxes {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    row-gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  &__fields {
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    row-gap: 0.75rem;
+  }
+
+  &__buttons {
+    margin-top: 24px;
+  }
+}
