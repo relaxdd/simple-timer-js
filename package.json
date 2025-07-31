@@ -3,6 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "author": {
+    "name": "Alexander A.",
+    "email": "awenn2015@gmail.com"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
