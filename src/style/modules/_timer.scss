@@ -40,3 +40,11 @@
     margin-top: 24px;
   }
 }
+
+@media only screen and (max-width: 575.5px) {
+  .setting_form {
+    &__fields {
+      width: 100%;
+    }
+  }
+}

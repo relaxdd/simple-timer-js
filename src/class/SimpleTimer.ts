@@ -1,8 +1,8 @@
 import DateFormat from './DateFormat.ts';
 
-type ValidationOptions = Record<string, { nullable: boolean, validator: boolean[] }>
-
-export interface SimpleTimerOptions {
+interface SimpleTimerOptions {
+  // Идентификатор таймера
+  storageId?: string | null,
   // Автозапуск таймера
   autoPlay?: boolean,
   // Время после которого таймер загорается красным
@@ -24,13 +24,13 @@ export interface SimpleTimerOptions {
   saveStateInStorage?: boolean,
   // Отображать миллисекунды
   displayMilliseconds?: boolean,
-  // Старайтесь не ставить 3, это может сказаться на производительности
-  fractionDigits?: 0 | 1 | 2 | 3,
+  /** Старайтесь не ставить 3, это может сказаться на производительности */
+  fractionDigits?: AllowedFractionDigits,
 }
 
-type SimpleTimerRequiredOptions =
-  & Required<Omit<SimpleTimerOptions, 'fractionDigits'>>
-  & { fractionDigits: 1 | 2 | 3 }
+type AllowedFractionDigits = 1 | 2;
+type SimpleTimerRequiredOptions = Required<SimpleTimerOptions>
+type ValidationOptions = Record<string, { nullable: boolean, validator: boolean[] }>
 
 const enum TimerState {
   play = 'play',
@@ -56,20 +56,22 @@ type TimerEventTypes = TimerStateTypes | 'reset'
  */
 class SimpleTimer {
   private readonly tickMs: number;
-  private readonly second = 1000;
+  private readonly second: number = 1000;
+  private readonly storageAvailable: boolean = false;
+  private readonly options: SimpleTimerRequiredOptions;
   
   private timerNode: HTMLElement;
-  private options: SimpleTimerRequiredOptions;
   private timerInterval: number;
   private timerSeconds: number;
-  
   private timerState: TimerState;
+  // private storageKey: string;
+  
   private initialized = false;
   private directionFlag = true;
   
   private config = {
     fewAttr: 'data-few',
-    storageKey: 'la5yPNRGnSn7tnK',
+    storagePrefix: '_awenn2015_simple_timer_',
   };
   
   private listeners: Record<TimerEventTypes, (() => void)[]> = {
@@ -92,8 +94,9 @@ class SimpleTimer {
     
     this.timerSeconds = 0;
     this.timerInterval = 0;
-    this.timerState = TimerState.stop;
     this.timerNode = timerNode;
+    this.timerState = TimerState.stop;
+    this.storageAvailable = this.getStorageAvailable();
     
     /*
      * ==============================
@@ -104,18 +107,19 @@ class SimpleTimer {
       few: null,
       fewColor: 'red',
       setFewColor: false,
-      bounce: false,
       redirect: false,
       redirectUrl: null,
       saveStateInStorage: false,
       displayMilliseconds: false,
       fractionDigits: 1,
       autoPlay: true,
+      storageId: null,
+      bounce: false,
     };
     
     const mergedOptions: Required<SimpleTimerOptions> = { ...defaultOptions, ...options };
     
-    if (mergedOptions.fractionDigits > 3) mergedOptions.fractionDigits = 3;
+    if (mergedOptions.fractionDigits > 2) mergedOptions.fractionDigits = 2;
     if (mergedOptions.fractionDigits < 0) mergedOptions.fractionDigits = 1;
     if (mergedOptions.fractionDigits < 1) mergedOptions.displayMilliseconds = false;
     
@@ -131,6 +135,32 @@ class SimpleTimer {
   
   public getState() {
     return this.timerState;
+  }
+  
+  /*
+   * ====================================
+   */
+  
+  /**
+   * @public
+   */
+  public initialize(): void {
+    if (this.initialized) {
+      throw new Error('Invalid initialization');
+    }
+    
+    this.timerSeconds = this.options.seconds;
+    this.writeTimerSecondsFromStorage();
+    
+    if (!this.options.autoPlay) {
+      this.drawTimer();
+      this.setStateAndNotifyListeners(TimerState.pause);
+    } else {
+      this.playTimer();
+      this.notifyListeners(TimerState.play);
+    }
+    
+    this.initialized = true;
   }
   
   /**
@@ -196,74 +226,6 @@ class SimpleTimer {
       this.playTimer();
       this.notifyListeners('reset');
     }
-  }
-  
-  /**
-   * @public
-   */
-  public initialize(): void {
-    if (this.initialized) {
-      throw new Error('Invalid initialization');
-    }
-    
-    const {
-      seconds,
-      autoPlay,
-      saveStateInStorage,
-    } = this.options;
-    
-    this.timerSeconds = seconds;
-    
-    if (saveStateInStorage && 'localStorage' in window) {
-      const prevTime = window.localStorage.getItem(this.config.storageKey);
-      if (prevTime && +prevTime >= 0) this.timerSeconds = +prevTime;
-    }
-    
-    if (!autoPlay) {
-      this.drawTimer();
-      this.setStateAndNotifyListeners(TimerState.pause);
-    } else {
-      this.playTimer();
-      this.notifyListeners(TimerState.play);
-    }
-    
-    this.initialized = true;
-  }
-  
-  /*
-   * ====================================
-   */
-  
-  /**
-   * @public
-   * @param listener
-   */
-  public onStop(listener: () => void) {
-    this.listeners.stop = [listener];
-  }
-  
-  /**
-   * @public
-   * @param listener
-   */
-  public onPause(listener: () => void) {
-    this.listeners.pause = [listener];
-  }
-  
-  /**
-   * @public
-   * @param listener
-   */
-  public onPlay(listener: () => void) {
-    this.listeners.play = [listener];
-  }
-  
-  /**
-   * @public
-   * @param listener
-   */
-  public onReset(listener: () => void) {
-    this.listeners.reset = [listener];
   }
   
   /**
@@ -357,23 +319,34 @@ class SimpleTimer {
    * @private
    */
   private drawTimer(): void {
+    const {
+      few,
+      fewColor,
+      setFewColor,
+      saveStateInStorage,
+    } = this.options;
+    
     this.timerNode.innerText = this.formatTime(this.timerSeconds);
     
-    if (this.options.few !== null) {
-      const less = this.timerSeconds <= this.options.few;
+    if (few !== null) {
+      const less = this.timerSeconds <= few;
       const attr = this.timerNode.hasAttribute(this.config.fewAttr);
       
       if (!less) {
         this.timerNode.removeAttribute(this.config.fewAttr);
-        if (this.options.setFewColor) this.timerNode.style.removeProperty('color');
+        if (setFewColor) this.timerNode.style.removeProperty('color');
       } else if (!attr) {
         this.timerNode.setAttribute(this.config.fewAttr, '');
-        if (this.options.setFewColor) this.timerNode.style.setProperty('color', this.options.fewColor);
+        if (setFewColor) this.timerNode.style.setProperty('color', fewColor);
       }
     }
     
-    if (this.options.saveStateInStorage && this.timerSeconds >= 0) {
-      window?.localStorage?.setItem(this.config.storageKey, String(this.timerSeconds));
+    /*
+     * TODO: Оптимизировать что бы очистка не происходила на каждом тике
+     */
+    if (this.storageAvailable && saveStateInStorage && this.timerSeconds >= 0) {
+      const storageKey = this.getStorageKey();
+      localStorage.setItem(storageKey, String(this.timerSeconds));
     }
   }
   
@@ -422,11 +395,149 @@ class SimpleTimer {
     return options;
   }
   
+  /**
+   * @private
+   */
   private drawPlaceholder() {
     const { displayMilliseconds, fractionDigits } = this.options;
     const milliseconds = displayMilliseconds ? '.' + '0'.repeat(fractionDigits) : '';
     
     this.timerNode.innerText = '00:00:00' + milliseconds;
+  }
+  
+  private getStorageKey() {
+    const nowTimerId = this.getStorageIdAndClearOthers() || this.findPrevStorageIdAndClearOthers() || this.generateStorageId();
+    return this.config.storagePrefix + nowTimerId;
+  };
+  
+  /**
+   * @private
+   */
+  private getStorageAvailable(): boolean {
+    try {
+      const testKey = '__test__';
+      localStorage.setItem(testKey, testKey);
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /**
+   * Unification of forEach and find to bypass localStorage
+   *
+   * @param callback
+   * @private
+   */
+  private loopStorage(callback: (key: string) => void | boolean): string | null {
+    if (!this.storageAvailable) {
+      return null;
+    }
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) break;
+      
+      const result = callback(key);
+      if (typeof result === 'boolean' && result) return key;
+    }
+    
+    return null;
+  }
+  
+  /**
+   * @param nowStorageId
+   * @private
+   */
+  private clearStorageIds(nowStorageId: string | null): void {
+    if (!this.storageAvailable) return;
+    
+    this.loopStorage((key) => {
+      if (key.startsWith(this.config.storagePrefix)) {
+        if (nowStorageId && key.endsWith(nowStorageId)) {
+          return;
+        }
+        
+        localStorage.removeItem(key);
+      }
+    });
+  }
+  
+  /**
+   * @private
+   */
+  private findPrevStorageKey() {
+    if (!this.storageAvailable) return null;
+    return this.loopStorage((key) => key.startsWith(this.config.storagePrefix));
+  }
+  
+  /**
+   * @private
+   */
+  private findPrevStorageId() {
+    if (!this.storageAvailable) return null;
+    const key = this.findPrevStorageKey();
+    return key && key.replace(this.config.storagePrefix, '');
+  }
+  
+  /**
+   * @private
+   */
+  private findPrevStorageIdAndClearOthers(): string | null {
+    if (!this.storageAvailable) return null;
+    
+    const storageId = this.findPrevStorageId();
+    if (!storageId) return null;
+    
+    this.clearStorageIds(storageId);
+    return storageId;
+  }
+  
+  /**
+   * @private
+   */
+  private getStorageIdAndClearOthers() {
+    if (this.options.storageId) {
+      this.clearStorageIds(this.options.storageId);
+    }
+    
+    return this.options.storageId;
+  }
+  
+  /**
+   * @param length
+   * @private
+   */
+  private generateStorageId(length = 15) {
+    const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * chars.length);
+      result += chars[randomIndex];
+    }
+    
+    return result;
+  }
+  
+  /**
+   * @private
+   */
+  private writeTimerSecondsFromStorage() {
+    if (!this.storageAvailable) return;
+    
+    if (!this.options.saveStateInStorage)
+      this.clearStorageIds(null);
+    else {
+      const storageId = this.options.storageId || this.findPrevStorageId();
+      if (!storageId) return;
+      
+      const storageKey = this.config.storagePrefix + storageId;
+      const prevTime = localStorage.getItem(storageKey);
+      
+      if (prevTime && +prevTime >= 0) this.timerSeconds = +prevTime;
+    }
   }
 }
 

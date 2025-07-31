@@ -3,8 +3,12 @@ import SimpleTimer from './class/SimpleTimer.ts';
 class Application {
   public timer: SimpleTimer | null = null;
   
+  public parseOptions() {
+  
+  }
+  
   public initialize() {
-    // const settingForm = document.querySelector<HTMLFormElement>('#setting-form');
+    const settingForm = document.querySelector<HTMLFormElement>('#setting-form');
     const timerControls = document.querySelector<HTMLInputElement>('#timer-controls');
     
     const playButton = timerControls?.querySelector<HTMLInputElement>('input[type="button"][data-play]');
@@ -13,22 +17,20 @@ class Application {
     const resetButton = timerControls?.querySelector<HTMLInputElement>('input[type="button"][data-reset]');
     
     const timer = new SimpleTimer('#timer', {
-      few: 30, //
-      seconds: 90, //
-      fewColor: 'red', //
-      setFewColor: true, //
-      bounce: false, //
-      redirect: false, //
-      redirectUrl: null, //
-      saveStateInStorage: false, //
-      displayMilliseconds: true, //
+      few: 30,
+      seconds: 90,
+      fewColor: 'red',
+      setFewColor: true,
+      saveStateInStorage: true,
+      displayMilliseconds: true,
       fractionDigits: 2,
-      autoPlay: false, //
+      autoPlay: false,
+      storageId: '3Bq8Wz1yT6Xv9D'
     });
     
-    timer.addEventListener('stop', () => {
-      console.log('Таймер успешно остановлен');
-    });
+    // timer.addEventListener('stop', () => {
+    //   console.log('Таймер успешно остановлен');
+    // });
     
     timer.initialize();
     
@@ -36,6 +38,17 @@ class Application {
     stopButton?.addEventListener('click', timer.stop.bind(timer));
     pauseButton?.addEventListener('click', timer.pause.bind(timer));
     resetButton?.addEventListener('click', timer.reset.bind(timer));
+    
+    settingForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(settingForm);
+      console.log(formData);
+    });
+    
+    settingForm?.addEventListener('reset', () => {
+      console.log('RESET');
+    });
   }
 }
 

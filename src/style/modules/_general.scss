@@ -26,10 +26,19 @@ main {
 }
 
 .container {
+  --bs-gutter-x: 30px;
+  --container-max-width: 100%;
+
   width: 100%;
   margin: 0 auto;
-  padding: 0 15px;
-  max-width: 1270px;
+  padding: 0 calc(var(--bs-gutter-x) / 2);
+  max-width: calc(var(--container-max-width) + var(--bs-gutter-x));
+}
+
+@media screen and (min-width: 1440px) {
+  .container {
+    --container-max-width: 1240px;
+  }
 }
 
 .form-label {
