@@ -34,7 +34,7 @@
           </label>
 
           <label class="form-checkbox">
-            <input type="checkbox" name="saveStateInStorage">
+            <input type="checkbox" name="saveInStorage">
             <span>Save the timer state in the browser memory</span>
           </label>
 
@@ -55,6 +55,22 @@
         </div>
 
         <div class="setting_form__fields">
+          <div>
+            <label class="form-label" for="storage-id-field">
+              <span>Storage ID</span>
+            </label>
+
+            <input
+              type="text"
+              name="storageId"
+              id="storage-id-field"
+              class="form-control"
+              minlength="15"
+              maxlength="15"
+              pattern="^[0-9a-zA-Z]+$"
+            >
+          </div>
+
           <div>
             <label class="form-label" for="seconds-field">
               <span>Seconds</span>
@@ -90,6 +106,7 @@
           <div>
             <label class="form-label" for="fraction-digits-field">
               <span>Qty Fraction Digits</span>
+              <small class="form-label--required">*</small>
             </label>
 
             <input
@@ -97,9 +114,9 @@
               name="fractionDigits"
               id="fraction-digits-field"
               class="form-control"
-              value="2"
-              min="1"
-              max="3"
+              value="2" min="1" max="2"
+              pattern="^[1-2]$"
+              required=""
             >
           </div>
 

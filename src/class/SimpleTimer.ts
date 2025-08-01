@@ -1,7 +1,8 @@
 import DateFormat from './DateFormat.ts';
 
 interface SimpleTimerOptions {
-  // Идентификатор таймера
+  // Идентификатор таймера.
+  // Нужен для контроля состоянием таймера в хранилище, для сброса поменяйте ID
   storageId?: string | null,
   // Автозапуск таймера
   autoPlay?: boolean,
@@ -13,24 +14,26 @@ interface SimpleTimerOptions {
   fewColor?: string | null,
   // Можно выключить перекраску из JS и делать это самому через стили
   setFewColor?: boolean,
-  // Параметр для отладки, после истечения времени таймер будет увеличиваться
-  // В общем отпрыгивать от 00:00:00 и 00:15:00
+  // Параметр для отладки, после истечения времени таймер будет увеличиваться.
+  // В общем отпрыгивать от 00:00:00 и 00:15:00 и работать по очереди как таймер и как секундомер
   bounce?: boolean,
   // Включить/выключить редирект по истечению таймера
   redirect?: boolean,
   // Ссылка на которую нужно перенаправить пользователя
   redirectUrl?: string | null,
   // Сохранять состояние таймера в браузере
-  saveStateInStorage?: boolean,
+  saveInStorage?: boolean,
   // Отображать миллисекунды
   displayMilliseconds?: boolean,
-  /** Старайтесь не ставить 3, это может сказаться на производительности */
+  /** Кол-во цифр в миллисекундах */
   fractionDigits?: AllowedFractionDigits,
 }
 
 type AllowedFractionDigits = 1 | 2;
+type AllowedOptionTypes = 'number' | 'string' | 'boolean'
 type SimpleTimerRequiredOptions = Required<SimpleTimerOptions>
 type ValidationOptions = Record<string, { nullable: boolean, validator: boolean[] }>
+type SimpleTimerOptionTypes = Record<keyof SimpleTimerRequiredOptions, { nullable: boolean, type: AllowedOptionTypes }>
 
 const enum TimerState {
   play = 'play',
@@ -64,7 +67,6 @@ class SimpleTimer {
   private timerInterval: number;
   private timerSeconds: number;
   private timerState: TimerState;
-  // private storageKey: string;
   
   private initialized = false;
   private directionFlag = true;
@@ -79,6 +81,36 @@ class SimpleTimer {
     play: [],
     pause: [],
     reset: [],
+  };
+  
+  private readonly defaultOptions: SimpleTimerRequiredOptions = {
+    seconds: 900,
+    few: null,
+    fewColor: 'red',
+    setFewColor: false,
+    redirect: false,
+    redirectUrl: null,
+    saveInStorage: false,
+    displayMilliseconds: false,
+    fractionDigits: 1,
+    autoPlay: true,
+    storageId: null,
+    bounce: false,
+  };
+  
+  private readonly optionTypes: SimpleTimerOptionTypes = {
+    seconds: { type: 'number', nullable: false },
+    few: { type: 'number', nullable: true },
+    fewColor: { type: 'string', nullable: true },
+    setFewColor: { type: 'boolean', nullable: false },
+    redirect: { type: 'boolean', nullable: false },
+    redirectUrl: { type: 'string', nullable: true },
+    saveInStorage: { type: 'boolean', nullable: false },
+    displayMilliseconds: { type: 'boolean', nullable: false },
+    fractionDigits: { type: 'number', nullable: false },
+    autoPlay: { type: 'boolean', nullable: false },
+    storageId: { type: 'string', nullable: true },
+    bounce: { type: 'boolean', nullable: false },
   };
   
   /**
@@ -102,22 +134,7 @@ class SimpleTimer {
      * ==============================
      */
     
-    const defaultOptions: SimpleTimerRequiredOptions = {
-      seconds: 900,
-      few: null,
-      fewColor: 'red',
-      setFewColor: false,
-      redirect: false,
-      redirectUrl: null,
-      saveStateInStorage: false,
-      displayMilliseconds: false,
-      fractionDigits: 1,
-      autoPlay: true,
-      storageId: null,
-      bounce: false,
-    };
-    
-    const mergedOptions: Required<SimpleTimerOptions> = { ...defaultOptions, ...options };
+    const mergedOptions: Required<SimpleTimerOptions> = { ...this.defaultOptions, ...options };
     
     if (mergedOptions.fractionDigits > 2) mergedOptions.fractionDigits = 2;
     if (mergedOptions.fractionDigits < 0) mergedOptions.fractionDigits = 1;
@@ -135,6 +152,14 @@ class SimpleTimer {
   
   public getState() {
     return this.timerState;
+  }
+  
+  public getOptionKeys() {
+    return Object.keys(this.defaultOptions) as (keyof SimpleTimerRequiredOptions)[];
+  }
+  
+  public getOptionTypes() {
+    return this.optionTypes;
   }
   
   /*
@@ -167,6 +192,8 @@ class SimpleTimer {
    * @public
    */
   public pause(): void {
+    console.log(this.timerState);
+    
     if ([TimerState.pause, TimerState.stop].includes(this.timerState)) {
       window.alert('Таймер уже был остановлен.');
       return;
@@ -323,7 +350,7 @@ class SimpleTimer {
       few,
       fewColor,
       setFewColor,
-      saveStateInStorage,
+      saveInStorage,
     } = this.options;
     
     this.timerNode.innerText = this.formatTime(this.timerSeconds);
@@ -344,7 +371,7 @@ class SimpleTimer {
     /*
      * TODO: Оптимизировать что бы очистка не происходила на каждом тике
      */
-    if (this.storageAvailable && saveStateInStorage && this.timerSeconds >= 0) {
+    if (this.storageAvailable && saveInStorage && this.timerSeconds >= 0) {
       const storageKey = this.getStorageKey();
       localStorage.setItem(storageKey, String(this.timerSeconds));
     }
@@ -527,7 +554,7 @@ class SimpleTimer {
   private writeTimerSecondsFromStorage() {
     if (!this.storageAvailable) return;
     
-    if (!this.options.saveStateInStorage)
+    if (!this.options.saveInStorage)
       this.clearStorageIds(null);
     else {
       const storageId = this.options.storageId || this.findPrevStorageId();
@@ -542,3 +569,8 @@ class SimpleTimer {
 }
 
 export default SimpleTimer;
+
+export type {
+  SimpleTimerOptions,
+  SimpleTimerRequiredOptions,
+};
